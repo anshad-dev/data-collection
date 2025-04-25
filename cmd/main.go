@@ -32,7 +32,6 @@ func main() {
 
 	router := gin.Default()
 
-	// POST /lender endpoint
 	router.POST("/lender", func(c *gin.Context) {
 		var jsonData map[string]interface{}
 
@@ -65,40 +64,38 @@ func main() {
 		})
 	})
 
-	// POST /lender-offer endpoint
 	router.POST("/lender-offer", func(c *gin.Context) {
-		var jsonData map[string]interface{}
+		var jsonArray []map[string]interface{}
 
-		if err := c.ShouldBindJSON(&jsonData); err != nil {
+		if err := c.ShouldBindJSON(&jsonArray); err != nil {
 			log.Printf("JSON bind error in /lender-offer: %v", err)
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Invalid JSON input",
+				"error": "Invalid JSON array input",
 			})
 			return
 		}
-
-		// Add timestamp
-		jsonData["createdAt"] = time.Now()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
 		collection := database.MongoClient.Database(cfg.DatabaseName).Collection("lender_offers")
-		_, err := collection.InsertOne(ctx, bson.M(jsonData))
-		if err != nil {
-			log.Printf("Mongo insert error in /lender-offer: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Failed to store data",
-			})
-			return
+
+		for _, jsonData := range jsonArray {
+			jsonData["createdAt"] = time.Now()
+			if _, err := collection.InsertOne(ctx, bson.M(jsonData)); err != nil {
+				log.Printf("Mongo insert error for item: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": "Failed to store some data",
+				})
+				return
+			}
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"message": "Data stored successfully",
+			"message": "All data stored successfully",
 		})
 	})
 
-	// PUT /lender/update/:id endpoint
 	router.PUT("/lender/update/:id", func(c *gin.Context) {
 		idParam := c.Param("id")
 		objectID, err := primitive.ObjectIDFromHex(idParam)
