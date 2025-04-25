@@ -11,6 +11,7 @@ import (
 type Config struct {
 	MongoURI     string
 	DatabaseName string
+	SecretKey    string
 }
 
 // LoadConfig loads environment variables from a .env file (if present)
@@ -21,6 +22,7 @@ func LoadConfig() (*Config, error) {
 
 	mongoURI := os.Getenv("MONGODB_URI")
 	dbName := os.Getenv("DATABASE_NAME")
+	secretKey := os.Getenv("SECRET_KEY")
 
 	if mongoURI == "" {
 		return nil, errors.New("MONGODB_URI is required but not set")
@@ -32,6 +34,7 @@ func LoadConfig() (*Config, error) {
 	cfg := &Config{
 		MongoURI:     mongoURI,
 		DatabaseName: dbName,
+		SecretKey:    secretKey,
 	}
 
 	log.Printf("Configuration loaded: %+v\n", cfg)
